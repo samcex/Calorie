@@ -503,17 +503,17 @@ function renderWeightChart() {
   const yToPx = (value) => chart.bottom - ((value - yMin) / (yMax - yMin)) * plotHeight;
 
   drawGrid(ctx, chart, xMin, xMax, yMin, yMax, xToPx, yToPx);
-  drawLine(ctx, ideal, xToPx, yToPx, "#6d6d6d", [6, 4], 2);
-  drawLine(ctx, actual, xToPx, yToPx, "#111111", [], 2.6);
-  drawPoints(ctx, actual, xToPx, yToPx, "#111111");
+  drawLine(ctx, ideal, xToPx, yToPx, "#7b97df", [6, 4], 2);
+  drawLine(ctx, actual, xToPx, yToPx, "#2e68ff", [], 2.6);
+  drawPoints(ctx, actual, xToPx, yToPx, "#214ed4");
 }
 
 function drawGrid(ctx, chart, xMin, xMax, yMin, yMax, xToPx, yToPx) {
   ctx.save();
-  ctx.strokeStyle = "#d4d4d4";
-  ctx.fillStyle = "#5a5a5a";
+  ctx.strokeStyle = "#d7e3ff";
+  ctx.fillStyle = "#607299";
   ctx.lineWidth = 1;
-  ctx.font = "12px 'IBM Plex Sans', sans-serif";
+  ctx.font = "12px 'Manrope', sans-serif";
 
   const horizontalTicks = 5;
   for (let i = 0; i <= horizontalTicks; i += 1) {
@@ -574,8 +574,8 @@ function drawPoints(ctx, points, xToPx, yToPx, color) {
 
 function drawEmptyChartMessage(ctx, width, height, message) {
   ctx.save();
-  ctx.fillStyle = "#5c5c5c";
-  ctx.font = "14px 'IBM Plex Sans', sans-serif";
+  ctx.fillStyle = "#607299";
+  ctx.font = "14px 'Manrope', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(message, width / 2, height / 2);
