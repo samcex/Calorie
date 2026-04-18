@@ -1,17 +1,17 @@
 :root {
-  --bg-main: #f4efe3;
-  --bg-alt: #d8ebe3;
-  --surface: rgba(255, 255, 255, 0.82);
+  --bg-main: #f2f2f2;
+  --bg-alt: #e3e3e3;
+  --surface: rgba(255, 255, 255, 0.92);
   --surface-strong: #ffffff;
-  --text-main: #132824;
-  --text-muted: #516762;
-  --line: #d4dfdb;
-  --teal: #0f766e;
-  --teal-dark: #0b5f59;
-  --orange: #dc6a1f;
-  --danger: #b42318;
-  --good: #166534;
-  --shadow: 0 18px 40px rgba(21, 41, 38, 0.12);
+  --text-main: #101010;
+  --text-muted: #5a5a5a;
+  --line: #d3d3d3;
+  --teal: #111111;
+  --teal-dark: #000000;
+  --orange: #6d6d6d;
+  --danger: #2c2c2c;
+  --good: #111111;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
   --radius: 18px;
 }
 
@@ -25,8 +25,8 @@ body {
   font-family: "IBM Plex Sans", sans-serif;
   min-height: 100vh;
   background:
-    radial-gradient(1200px 700px at 10% -20%, #fff4de 0%, transparent 55%),
-    radial-gradient(1200px 700px at 90% 0%, #d7f1e8 0%, transparent 55%),
+    radial-gradient(1200px 700px at 10% -20%, #ffffff 0%, transparent 55%),
+    radial-gradient(1200px 700px at 90% 0%, #ededed 0%, transparent 55%),
     linear-gradient(140deg, var(--bg-main), var(--bg-alt));
 }
 
@@ -41,7 +41,7 @@ body {
 .ambient-shape-1 {
   width: 260px;
   height: 260px;
-  background: #f7b98d;
+  background: #d8d8d8;
   top: 8%;
   left: -70px;
 }
@@ -49,7 +49,7 @@ body {
 .ambient-shape-2 {
   width: 300px;
   height: 300px;
-  background: #8ed6c7;
+  background: #c4c4c4;
   bottom: -80px;
   right: -90px;
 }
@@ -62,8 +62,8 @@ body {
 }
 
 .hero {
-  background: linear-gradient(145deg, rgba(15, 118, 110, 0.94), rgba(18, 143, 134, 0.88));
-  color: #f7fffc;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.94), rgba(45, 45, 45, 0.9));
+  color: #ffffff;
   padding: 1.2rem clamp(0.95rem, 2.5vw, 1.4rem);
   border-radius: 20px;
   box-shadow: var(--shadow);
@@ -128,19 +128,19 @@ h2 {
 }
 
 .tab-button:hover {
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(0, 0, 0, 0.08);
   color: var(--teal-dark);
 }
 
 .tab-button:focus-visible {
   outline: none;
-  border-color: rgba(15, 118, 110, 0.35);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+  border-color: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.14);
 }
 
 .tab-button.is-active {
   color: #ffffff;
-  background: linear-gradient(135deg, var(--teal), #168f84);
+  background: linear-gradient(135deg, var(--teal), #343434);
 }
 
 .summary-strip {
@@ -224,7 +224,7 @@ input:focus,
 select:focus {
   outline: none;
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.14);
 }
 
 .form-grid {
@@ -264,13 +264,13 @@ button:active {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--orange), #f08c45);
-  color: #fff9f3;
+  background: linear-gradient(135deg, #000000, #3a3a3a);
+  color: #ffffff;
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, var(--teal), #1b9f93);
-  color: #f2fffb;
+  background: linear-gradient(135deg, #2b2b2b, #4e4e4e);
+  color: #ffffff;
 }
 
 .results-grid {
@@ -360,7 +360,7 @@ table {
 }
 
 thead {
-  background: #f7faf9;
+  background: #f4f4f4;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -370,7 +370,7 @@ th,
 td {
   text-align: left;
   padding: 0.58rem;
-  border-bottom: 1px solid #eaf0ee;
+  border-bottom: 1px solid #e5e5e5;
   font-size: 0.88rem;
 }
 
@@ -379,9 +379,9 @@ tbody tr:last-child td {
 }
 
 .row-action {
-  border: 1px solid #f4bdb4;
-  color: #9a2d1d;
-  background: #fff7f5;
+  border: 1px solid #b8b8b8;
+  color: #222222;
+  background: #f1f1f1;
   border-radius: 8px;
   padding: 0.26rem 0.48rem;
   font-size: 0.78rem;
