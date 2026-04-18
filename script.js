@@ -1,4 +1,5 @@
 const STORAGE_KEY = "calorie-tracker-state-v1";
+const UI_STORAGE_KEY = "calorie-tracker-ui-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ACTIVITY_FACTORS = {
@@ -35,8 +36,12 @@ const defaultState = {
 };
 
 const state = loadState();
+const uiState = loadUiState();
 
 const refs = {
+  sectionTabs: document.getElementById("sectionTabs"),
+  tabButtons: Array.from(document.querySelectorAll(".tab-button[data-panel-target]")),
+  panels: Array.from(document.querySelectorAll(".panel[data-panel]")),
   calculatorForm: document.getElementById("calculatorForm"),
   age: document.getElementById("age"),
   sex: document.getElementById("sex"),
@@ -63,6 +68,9 @@ const refs = {
   weightValueKg: document.getElementById("weightValueKg"),
   weightTableBody: document.getElementById("weightTableBody"),
   weightChart: document.getElementById("weightChart"),
+  stripTargetKcal: document.getElementById("stripTargetKcal"),
+  stripTodayKcal: document.getElementById("stripTodayKcal"),
+  stripLatestWeight: document.getElementById("stripLatestWeight"),
 };
 
 if (!state.calorieSummary) {
@@ -71,6 +79,7 @@ if (!state.calorieSummary) {
 
 initializeView();
 attachEvents();
+setActivePanel(uiState.activePanel, false);
 renderAll();
 
 function initializeView() {
@@ -92,6 +101,13 @@ function initializeView() {
 }
 
 function attachEvents() {
+  refs.sectionTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-panel-target]");
+    if (!button) return;
+    const panelName = button.getAttribute("data-panel-target");
+    setActivePanel(panelName, true);
+  });
+
   refs.calculatorForm.addEventListener("submit", handleCalculatorSubmit);
   refs.foodEntryForm.addEventListener("submit", handleAddFoodEntry);
   refs.foodDate.addEventListener("change", renderDailyTotals);
@@ -119,6 +135,58 @@ function attachEvents() {
   });
 
   window.addEventListener("resize", debounce(renderWeightChart, 90));
+}
+
+function setActivePanel(panelName, shouldPersist) {
+  const allowedPanels = ["calculator", "food", "weight"];
+  const nextPanel = allowedPanels.includes(panelName) ? panelName : "calculator";
+  uiState.activePanel = nextPanel;
+
+  refs.tabButtons.forEach((button) => {
+    const isActive = button.getAttribute("data-panel-target") === nextPanel;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  refs.panels.forEach((panel) => {
+    const isActive = panel.getAttribute("data-panel") === nextPanel;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+
+  if (shouldPersist) {
+    saveUiState();
+  }
+
+  if (nextPanel === "weight") {
+    // Ensure the canvas has a final rendered width after tab activation.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(renderWeightChart);
+    });
+  }
+}
+
+function renderSummaryStrip() {
+  if (!refs.stripTargetKcal || !refs.stripTodayKcal || !refs.stripLatestWeight) {
+    return;
+  }
+
+  const today = localDateString(new Date());
+  const todayCalories = state.calorieEntries
+    .filter((entry) => entry.date === today)
+    .reduce((sum, entry) => sum + entry.calories, 0);
+  const target = state.calorieSummary ? state.calorieSummary.targetCalories : null;
+
+  const latestWeightEntry = state.weightEntries.reduce((latest, entry) => {
+    if (!latest || entry.date > latest.date) {
+      return entry;
+    }
+    return latest;
+  }, null);
+
+  refs.stripTargetKcal.textContent = target === null ? "-" : `${target}`;
+  refs.stripTodayKcal.textContent = `${todayCalories}`;
+  refs.stripLatestWeight.textContent = latestWeightEntry ? `${latestWeightEntry.weightKg.toFixed(1)} kg` : "-";
 }
 
 function handleCalculatorSubmit(event) {
@@ -228,6 +296,7 @@ function renderAll() {
   renderDailyTotals();
   renderWeightTable();
   renderWeightChart();
+  renderSummaryStrip();
 }
 
 function renderCalorieSummary() {
@@ -319,6 +388,8 @@ function renderDailyTotals() {
   } else {
     refs.dayRemaining.classList.add("is-positive");
   }
+
+  renderSummaryStrip();
 }
 
 function renderWeightTable() {
@@ -333,6 +404,7 @@ function renderWeightTable() {
     cell.textContent = "No weight entries yet.";
     row.appendChild(cell);
     refs.weightTableBody.appendChild(row);
+    renderSummaryStrip();
     return;
   }
 
@@ -358,6 +430,8 @@ function renderWeightTable() {
     row.appendChild(actionCell);
     refs.weightTableBody.appendChild(row);
   });
+
+  renderSummaryStrip();
 }
 
 function renderWeightChart() {
@@ -616,6 +690,29 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadUiState() {
+  const defaults = { activePanel: "calculator" };
+  const stored = localStorage.getItem(UI_STORAGE_KEY);
+  if (!stored) return defaults;
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (parsed && typeof parsed.activePanel === "string") {
+      return {
+        activePanel: parsed.activePanel,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to parse UI state:", error);
+  }
+
+  return defaults;
+}
+
+function saveUiState() {
+  localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(uiState));
 }
 
 function numericValue(value, min, max) {

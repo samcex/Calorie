@@ -22,7 +22,65 @@
       </p>
     </header>
 
-    <section class="card">
+    <nav class="section-tabs" id="sectionTabs" role="tablist" aria-label="Tracker sections">
+      <button
+        id="tab-calculator"
+        class="tab-button is-active"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        aria-controls="panel-calculator"
+        data-panel-target="calculator"
+      >
+        Calculator
+      </button>
+      <button
+        id="tab-food"
+        class="tab-button"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-food"
+        data-panel-target="food"
+      >
+        Food Log
+      </button>
+      <button
+        id="tab-weight"
+        class="tab-button"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-weight"
+        data-panel-target="weight"
+      >
+        Weight Dashboard
+      </button>
+    </nav>
+
+    <section class="summary-strip">
+      <article class="summary-pill">
+        <span>Target kcal</span>
+        <strong id="stripTargetKcal">-</strong>
+      </article>
+      <article class="summary-pill">
+        <span>Today eaten</span>
+        <strong id="stripTodayKcal">0</strong>
+      </article>
+      <article class="summary-pill">
+        <span>Latest weight</span>
+        <strong id="stripLatestWeight">-</strong>
+      </article>
+    </section>
+
+    <div class="panel-stack">
+      <section
+        class="card panel is-active"
+        id="panel-calculator"
+        data-panel="calculator"
+        role="tabpanel"
+        aria-labelledby="tab-calculator"
+      >
       <h2>Daily Calorie Calculator</h2>
       <p class="section-copy">
         Uses the Mifflin-St Jeor formula for BMR, then adjusts for activity and goal.
@@ -79,9 +137,16 @@
 
       <div id="calorieResults" class="results-grid" aria-live="polite"></div>
       <p id="calculatorNote" class="note"></p>
-    </section>
+      </section>
 
-    <section class="card">
+      <section
+        class="card panel"
+        id="panel-food"
+        data-panel="food"
+        role="tabpanel"
+        aria-labelledby="tab-food"
+        hidden
+      >
       <h2>Food Intake Tracker</h2>
       <p class="section-copy">
         Add daily food entries and monitor your calorie budget against the calculated target.
@@ -131,9 +196,16 @@
           <tbody id="foodTableBody"></tbody>
         </table>
       </div>
-    </section>
+      </section>
 
-    <section class="card">
+      <section
+        class="card panel"
+        id="panel-weight"
+        data-panel="weight"
+        role="tabpanel"
+        aria-labelledby="tab-weight"
+        hidden
+      >
       <h2>Weight Dashboard</h2>
       <p class="section-copy">
         Log your weight and compare your real trend with the ideal line to your target.
@@ -184,7 +256,8 @@
           <tbody id="weightTableBody"></tbody>
         </table>
       </div>
-    </section>
+      </section>
+    </div>
 
     <footer class="footer-note">
       For planning and education only. Speak with a healthcare professional for medical advice.
