@@ -503,15 +503,15 @@ function renderWeightChart() {
   const yToPx = (value) => chart.bottom - ((value - yMin) / (yMax - yMin)) * plotHeight;
 
   drawGrid(ctx, chart, xMin, xMax, yMin, yMax, xToPx, yToPx);
-  drawLine(ctx, ideal, xToPx, yToPx, "#7b97df", [6, 4], 2);
-  drawLine(ctx, actual, xToPx, yToPx, "#2e68ff", [], 2.6);
-  drawPoints(ctx, actual, xToPx, yToPx, "#214ed4");
+  drawLine(ctx, ideal, xToPx, yToPx, "rgba(0, 0, 0, 0.45)", [6, 4], 2);
+  drawLine(ctx, actual, xToPx, yToPx, "#000000", [], 2.6);
+  drawPoints(ctx, actual, xToPx, yToPx, "#000000");
 }
 
 function drawGrid(ctx, chart, xMin, xMax, yMin, yMax, xToPx, yToPx) {
   ctx.save();
-  ctx.strokeStyle = "#d7e3ff";
-  ctx.fillStyle = "#607299";
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.14)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
   ctx.lineWidth = 1;
   ctx.font = "12px 'Manrope', sans-serif";
 
@@ -574,7 +574,7 @@ function drawPoints(ctx, points, xToPx, yToPx, color) {
 
 function drawEmptyChartMessage(ctx, width, height, message) {
   ctx.save();
-  ctx.fillStyle = "#607299";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
   ctx.font = "14px 'Manrope', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
