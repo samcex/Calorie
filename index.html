@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Tracker Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient-shape ambient-shape-1"></div>
+  <div class="ambient-shape ambient-shape-2"></div>
+
+  <main class="app-shell">
+    <header class="hero">
+      <p class="eyebrow">Health Planning Web App</p>
+      <h1>Calorie Tracker</h1>
+      <p class="hero-copy">
+        Calculate your daily calorie target, track meals, and compare your real weight trend against your ideal plan.
+      </p>
+    </header>
+
+    <section class="card">
+      <h2>Daily Calorie Calculator</h2>
+      <p class="section-copy">
+        Uses the Mifflin-St Jeor formula for BMR, then adjusts for activity and goal.
+      </p>
+      <form id="calculatorForm" class="form-grid">
+        <label>
+          Age
+          <input id="age" name="age" type="number" min="10" max="100" required />
+        </label>
+        <label>
+          Sex
+          <select id="sex" name="sex">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+          </select>
+        </label>
+        <label>
+          Height (cm)
+          <input id="heightCm" name="heightCm" type="number" min="100" max="250" required />
+        </label>
+        <label>
+          Weight (kg)
+          <input id="weightKg" name="weightKg" type="number" min="30" max="300" step="0.1" required />
+        </label>
+        <label>
+          Activity Level
+          <select id="activityLevel" name="activityLevel">
+            <option value="sedentary">Sedentary</option>
+            <option value="light">Lightly Active</option>
+            <option value="moderate">Moderately Active</option>
+            <option value="very">Very Active</option>
+            <option value="athlete">Athlete / Very High</option>
+          </select>
+        </label>
+        <label>
+          Goal
+          <select id="goal" name="goal">
+            <option value="lose">Lose Weight</option>
+            <option value="maintain">Maintain Weight</option>
+            <option value="gain">Gain Weight</option>
+          </select>
+        </label>
+        <label>
+          Speed (kg/week)
+          <select id="paceKgPerWeek" name="paceKgPerWeek">
+            <option value="0.25">0.25 kg / week</option>
+            <option value="0.5" selected>0.5 kg / week</option>
+            <option value="0.75">0.75 kg / week</option>
+            <option value="1.0">1.0 kg / week</option>
+          </select>
+        </label>
+        <button type="submit" class="btn-primary">Calculate Target</button>
+      </form>
+
+      <div id="calorieResults" class="results-grid" aria-live="polite"></div>
+      <p id="calculatorNote" class="note"></p>
+    </section>
+
+    <section class="card">
+      <h2>Food Intake Tracker</h2>
+      <p class="section-copy">
+        Add daily food entries and monitor your calorie budget against the calculated target.
+      </p>
+
+      <form id="foodEntryForm" class="inline-form">
+        <label>
+          Date
+          <input id="foodDate" name="foodDate" type="date" required />
+        </label>
+        <label>
+          Food / Meal
+          <input id="foodName" name="foodName" type="text" maxlength="100" placeholder="Chicken salad" required />
+        </label>
+        <label>
+          Calories
+          <input id="foodCalories" name="foodCalories" type="number" min="1" max="5000" required />
+        </label>
+        <button type="submit" class="btn-secondary">Add Entry</button>
+      </form>
+
+      <div class="totals-row">
+        <article class="stat-chip">
+          <span>Calories today</span>
+          <strong id="dayTotal">0</strong>
+        </article>
+        <article class="stat-chip">
+          <span>Target</span>
+          <strong id="dayTarget">-</strong>
+        </article>
+        <article class="stat-chip">
+          <span>Remaining</span>
+          <strong id="dayRemaining">-</strong>
+        </article>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Food</th>
+              <th>Calories</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="foodTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Weight Dashboard</h2>
+      <p class="section-copy">
+        Log your weight and compare your real trend with the ideal line to your target.
+      </p>
+
+      <form id="weightPlanForm" class="inline-form plan-form">
+        <label>
+          Target weight (kg)
+          <input id="targetWeightKg" name="targetWeightKg" type="number" min="30" max="300" step="0.1" required />
+        </label>
+        <label>
+          Target date
+          <input id="targetDate" name="targetDate" type="date" required />
+        </label>
+        <button type="submit" class="btn-secondary">Save Ideal Line</button>
+      </form>
+
+      <form id="weightEntryForm" class="inline-form">
+        <label>
+          Entry date
+          <input id="weightDate" name="weightDate" type="date" required />
+        </label>
+        <label>
+          Weight (kg)
+          <input id="weightValueKg" name="weightValueKg" type="number" min="30" max="300" step="0.1" required />
+        </label>
+        <button type="submit" class="btn-secondary">Log Weight</button>
+      </form>
+
+      <div class="chart-wrap">
+        <canvas id="weightChart" aria-label="Weight trend versus ideal line"></canvas>
+      </div>
+
+      <div class="legend">
+        <span><i class="legend-line legend-real"></i>Real Weight</span>
+        <span><i class="legend-line legend-ideal"></i>Ideal Weight</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Weight (kg)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="weightTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer-note">
+      For planning and education only. Speak with a healthcare professional for medical advice.
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
