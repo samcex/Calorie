@@ -478,6 +478,21 @@ body {
   grid-column: 1 / -1;
 }
 
+.detail-form-message {
+  min-height: 0.9rem;
+  margin: 0.38rem 0 0;
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.detail-form-message.is-error {
+  color: #ffffff;
+}
+
+.detail-form-message.is-success {
+  color: #ffffff;
+}
+
 .overlay-grid input,
 .overlay-grid select {
   margin-top: 0.16rem;

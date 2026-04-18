@@ -45,6 +45,7 @@ const state = loadState();
 if (!state.calorieSummary) {
   state.calorieSummary = calculateCalorieSummary(state.profile);
 }
+let detailMessageTimeout = null;
 
 const refs = {
   statusTime: document.getElementById("statusTime"),
@@ -91,6 +92,7 @@ const refs = {
   goal: document.getElementById("goal"),
   paceKgPerWeek: document.getElementById("paceKgPerWeek"),
   detailTargetCalories: document.getElementById("detailTargetCalories"),
+  detailFormMessage: document.getElementById("detailFormMessage"),
   weightChart: document.getElementById("weightChart"),
 };
 
@@ -108,13 +110,7 @@ function initializeView() {
   refs.weekLabel.textContent = `Week ${weekNumber(new Date())}`;
   refs.waterGoalText.textContent = WATER_GOAL_LITERS.toFixed(2);
 
-  refs.age.value = state.profile.age;
-  refs.sex.value = state.profile.sex;
-  refs.heightCm.value = state.profile.heightCm;
-  refs.weightKg.value = state.profile.weightKg;
-  refs.activityLevel.value = state.profile.activityLevel;
-  refs.goal.value = state.profile.goal;
-  refs.paceKgPerWeek.value = String(state.profile.paceKgPerWeek);
+  syncCalculatorFormFromState();
 }
 
 function attachEvents() {
@@ -156,13 +152,17 @@ function attachEvents() {
       goal: ["lose", "maintain", "gain"].includes(refs.goal.value) ? refs.goal.value : "maintain",
       paceKgPerWeek: toNumber(refs.paceKgPerWeek.value, 0.25, 1),
     };
-    if (Object.values(nextProfile).some((v) => v === null)) return;
+    if (Object.values(nextProfile).some((v) => v === null)) {
+      setDetailMessage("Please fill all fields with valid values.", "error");
+      return;
+    }
 
     state.profile = nextProfile;
     state.calorieSummary = calculateCalorieSummary(nextProfile);
     refs.detailTargetCalories.textContent = `${state.calorieSummary.targetCalories} kcal`;
     saveState();
     renderAll();
+    setDetailMessage(`Updated target to ${state.calorieSummary.targetCalories} kcal/day.`, "success");
   });
 
   window.addEventListener("resize", debounce(renderWeightChart, 80));
@@ -267,12 +267,47 @@ function renderDetails() {
 }
 
 function openDetails() {
+  syncCalculatorFormFromState();
+  setDetailMessage("", "success", true);
   refs.detailsOverlay.hidden = false;
   renderDetails();
 }
 
 function closeDetails() {
   refs.detailsOverlay.hidden = true;
+}
+
+function syncCalculatorFormFromState() {
+  refs.age.value = state.profile.age;
+  refs.sex.value = state.profile.sex;
+  refs.heightCm.value = state.profile.heightCm;
+  refs.weightKg.value = state.profile.weightKg;
+  refs.activityLevel.value = state.profile.activityLevel;
+  refs.goal.value = state.profile.goal;
+  refs.paceKgPerWeek.value = String(state.profile.paceKgPerWeek);
+}
+
+function setDetailMessage(message, type, clearOnly = false) {
+  if (!refs.detailFormMessage) return;
+
+  refs.detailFormMessage.textContent = message;
+  refs.detailFormMessage.classList.remove("is-error", "is-success");
+  if (!clearOnly && message) {
+    refs.detailFormMessage.classList.add(type === "error" ? "is-error" : "is-success");
+  }
+
+  if (detailMessageTimeout) {
+    clearTimeout(detailMessageTimeout);
+    detailMessageTimeout = null;
+  }
+
+  if (!clearOnly && message) {
+    detailMessageTimeout = setTimeout(() => {
+      refs.detailFormMessage.textContent = "";
+      refs.detailFormMessage.classList.remove("is-error", "is-success");
+      detailMessageTimeout = null;
+    }, 2200);
+  }
 }
 
 function addMealEntry(mealType) {
