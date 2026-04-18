@@ -3,195 +3,266 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calorie Tracker</title>
+  <title>Calorie Tracker Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="phone-shell">
-    <div class="status-row">
-      <span id="statusTime">09:29</span>
-      <div class="status-icons">
-        <span>●●●</span>
-      </div>
-    </div>
+  <div class="ambient-shape ambient-shape-1"></div>
+  <div class="ambient-shape ambient-shape-2"></div>
 
-    <header class="top-header">
-      <h1>Today</h1>
-      <p id="weekLabel">Week 01</p>
+  <main class="app-shell">
+    <header class="hero">
+      <p class="eyebrow">Health Planning Web App</p>
+      <h1>Calorie Tracker</h1>
+      <p class="hero-copy">
+        Calculate your daily calorie target, track meals, and compare your real weight trend against your ideal plan.
+      </p>
     </header>
 
-    <section class="section-head">
-      <h2>Summary</h2>
-      <button class="text-link" id="openDetailsButton" type="button">Details</button>
-    </section>
-
-    <section class="card summary-card">
-      <div class="summary-grid">
-        <div class="summary-col">
-          <strong id="todayEaten">0</strong>
-          <span>Eaten</span>
-        </div>
-        <div class="ring-wrap">
-          <div class="ring" id="calorieRing">
-            <div class="ring-inner">
-              <strong id="remainingCalories">0</strong>
-              <span>Remaining</span>
-            </div>
-          </div>
-        </div>
-        <div class="summary-col">
-          <strong id="todayBurned">0</strong>
-          <span>Burned</span>
-        </div>
-      </div>
-
-      <div class="macro-row">
-        <div class="macro-item">
-          <span>Carbs</span>
-          <div class="bar"><i id="carbsBar"></i></div>
-          <small id="carbsText">0 / 0 g</small>
-        </div>
-        <div class="macro-item">
-          <span>Prot</span>
-          <div class="bar"><i id="proteinBar"></i></div>
-          <small id="proteinText">0 / 0 g</small>
-        </div>
-        <div class="macro-item">
-          <span>Fat</span>
-          <div class="bar"><i id="fatBar"></i></div>
-          <small id="fatText">0 / 0 g</small>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-head">
-      <h2>Nutrition</h2>
-      <button class="text-link" id="openNutritionButton" type="button">More</button>
-    </section>
-
-    <section class="card list-card" id="nutritionList"></section>
-
-    <section class="section-head">
-      <h2>Water Tracker</h2>
-    </section>
-
-    <section class="card water-card">
-      <div class="water-top">
-        <p>Water</p>
-        <small>Goal: <span id="waterGoalText">3.00</span> L</small>
-      </div>
-      <strong id="waterAmount">0.00 L</strong>
-      <div class="cups-row" id="cupsRow"></div>
-      <div class="water-actions">
-        <button type="button" class="small-action" id="waterMinus">-0.25 L</button>
-        <button type="button" class="small-action" id="waterPlus">+0.25 L</button>
-      </div>
-    </section>
-
-    <section class="section-head">
-      <h2>Measurements</h2>
-      <button class="text-link" id="openWeightButton" type="button">More</button>
-    </section>
-
-    <section class="card measure-card">
-      <small>Weight</small>
-      <p>Goal: <span id="weightGoalLabel">0.0 kg</span></p>
-      <div class="weight-row">
-        <button type="button" class="round-btn" id="weightDown">−</button>
-        <strong id="currentWeightLabel">0.0 kg</strong>
-        <button type="button" class="round-btn" id="weightUp">+</button>
-      </div>
-    </section>
-
-    <section class="section-head">
-      <h2>Activities</h2>
-      <button class="text-link" id="openActivityButton" type="button">More</button>
-    </section>
-
-    <section class="card activity-card">
-      <strong id="stepCountLabel">0 steps</strong>
-      <small id="burnedKcalLabel">0.0 kcal</small>
-      <div class="progress-track">
-        <i id="stepsProgress"></i>
-      </div>
-      <div class="activity-actions">
-        <button type="button" class="small-action" id="stepsMinus">-500</button>
-        <button type="button" class="small-action" id="stepsPlus">+500</button>
-      </div>
-    </section>
-
-    <section class="section-head">
-      <h2>Notes</h2>
-    </section>
-
-    <section class="card notes-card">
-      <p id="latestNoteText">How was your day?</p>
-      <button type="button" class="note-button" id="addNoteButton">Add Note</button>
-    </section>
-
-    <nav class="bottom-nav">
-      <button type="button" class="nav-item is-active">●<span>Home</span></button>
-      <button type="button" class="nav-item">●<span>Activity</span></button>
-      <button type="button" class="nav-item">●<span>Measure</span></button>
-      <button type="button" class="nav-item">●<span>Settings</span></button>
+    <nav class="section-tabs" id="sectionTabs" role="tablist" aria-label="Tracker sections">
+      <button
+        id="tab-calculator"
+        class="tab-button is-active"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        aria-controls="panel-calculator"
+        data-panel-target="calculator"
+      >
+        Calculator
+      </button>
+      <button
+        id="tab-food"
+        class="tab-button"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-food"
+        data-panel-target="food"
+      >
+        Food Log
+      </button>
+      <button
+        id="tab-weight"
+        class="tab-button"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-weight"
+        data-panel-target="weight"
+      >
+        Weight Dashboard
+      </button>
     </nav>
-  </main>
 
-  <section class="overlay" id="detailsOverlay" hidden>
-    <div class="overlay-card">
-      <header class="overlay-head">
-        <h3>Details</h3>
-        <button id="closeDetailsButton" type="button" class="text-link">Close</button>
-      </header>
+    <section class="summary-strip">
+      <article class="summary-pill">
+        <span>Target kcal</span>
+        <strong id="stripTargetKcal">-</strong>
+      </article>
+      <article class="summary-pill">
+        <span>Today eaten</span>
+        <strong id="stripTodayKcal">0</strong>
+      </article>
+      <article class="summary-pill">
+        <span>Latest weight</span>
+        <strong id="stripLatestWeight">-</strong>
+      </article>
+    </section>
 
-      <form id="calculatorForm" class="overlay-grid">
-        <label>Age<input id="age" type="number" min="10" max="100" required /></label>
-        <label>Sex
-          <select id="sex">
+    <div class="panel-stack">
+      <section
+        class="card panel is-active"
+        id="panel-calculator"
+        data-panel="calculator"
+        role="tabpanel"
+        aria-labelledby="tab-calculator"
+      >
+      <h2>Daily Calorie Calculator</h2>
+      <p class="section-copy">
+        Uses the Mifflin-St Jeor formula for BMR, then adjusts for activity and goal.
+      </p>
+      <form id="calculatorForm" class="form-grid">
+        <label>
+          Age
+          <input id="age" name="age" type="number" min="10" max="100" required />
+        </label>
+        <label>
+          Sex
+          <select id="sex" name="sex">
             <option value="female">Female</option>
             <option value="male">Male</option>
           </select>
         </label>
-        <label>Height (cm)<input id="heightCm" type="number" min="100" max="250" required /></label>
-        <label>Weight (kg)<input id="weightKg" type="number" min="30" max="300" step="0.1" required /></label>
-        <label>Activity
-          <select id="activityLevel">
+        <label>
+          Height (cm)
+          <input id="heightCm" name="heightCm" type="number" min="100" max="250" required />
+        </label>
+        <label>
+          Weight (kg)
+          <input id="weightKg" name="weightKg" type="number" min="30" max="300" step="0.1" required />
+        </label>
+        <label>
+          Activity Level
+          <select id="activityLevel" name="activityLevel">
             <option value="sedentary">Sedentary</option>
-            <option value="light">Light</option>
-            <option value="moderate">Moderate</option>
+            <option value="light">Lightly Active</option>
+            <option value="moderate">Moderately Active</option>
             <option value="very">Very Active</option>
-            <option value="athlete">Athlete</option>
+            <option value="athlete">Athlete / Very High</option>
           </select>
         </label>
-        <label>Goal
-          <select id="goal">
-            <option value="lose">Lose</option>
-            <option value="maintain">Maintain</option>
-            <option value="gain">Gain</option>
+        <label>
+          Goal
+          <select id="goal" name="goal">
+            <option value="lose">Lose Weight</option>
+            <option value="maintain">Maintain Weight</option>
+            <option value="gain">Gain Weight</option>
           </select>
         </label>
-        <label>Pace (kg/week)
-          <select id="paceKgPerWeek">
-            <option value="0.25">0.25</option>
-            <option value="0.5">0.50</option>
-            <option value="0.75">0.75</option>
-            <option value="1">1.00</option>
+        <label>
+          Speed (kg/week)
+          <select id="paceKgPerWeek" name="paceKgPerWeek">
+            <option value="0.25">0.25 kg / week</option>
+            <option value="0.5" selected>0.5 kg / week</option>
+            <option value="0.75">0.75 kg / week</option>
+            <option value="1.0">1.0 kg / week</option>
           </select>
         </label>
-        <button type="submit" class="small-action">Update Target</button>
+        <button type="submit" class="btn-primary">Calculate Target</button>
       </form>
-      <p id="detailFormMessage" class="detail-form-message" aria-live="polite"></p>
 
-      <p class="detail-kpi">Daily target: <strong id="detailTargetCalories">0 kcal</strong></p>
+      <div id="calorieResults" class="results-grid" aria-live="polite"></div>
+      <p id="calculatorNote" class="note"></p>
+      </section>
+
+      <section
+        class="card panel"
+        id="panel-food"
+        data-panel="food"
+        role="tabpanel"
+        aria-labelledby="tab-food"
+        hidden
+      >
+      <h2>Food Intake Tracker</h2>
+      <p class="section-copy">
+        Add daily food entries and monitor your calorie budget against the calculated target.
+      </p>
+
+      <form id="foodEntryForm" class="inline-form">
+        <label>
+          Date
+          <input id="foodDate" name="foodDate" type="date" required />
+        </label>
+        <label>
+          Food / Meal
+          <input id="foodName" name="foodName" type="text" maxlength="100" placeholder="Chicken salad" required />
+        </label>
+        <label>
+          Calories
+          <input id="foodCalories" name="foodCalories" type="number" min="1" max="5000" required />
+        </label>
+        <button type="submit" class="btn-secondary">Add Entry</button>
+      </form>
+
+      <div class="totals-row">
+        <article class="stat-chip">
+          <span>Calories today</span>
+          <strong id="dayTotal">0</strong>
+        </article>
+        <article class="stat-chip">
+          <span>Target</span>
+          <strong id="dayTarget">-</strong>
+        </article>
+        <article class="stat-chip">
+          <span>Remaining</span>
+          <strong id="dayRemaining">-</strong>
+        </article>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Food</th>
+              <th>Calories</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="foodTableBody"></tbody>
+        </table>
+      </div>
+      </section>
+
+      <section
+        class="card panel"
+        id="panel-weight"
+        data-panel="weight"
+        role="tabpanel"
+        aria-labelledby="tab-weight"
+        hidden
+      >
+      <h2>Weight Dashboard</h2>
+      <p class="section-copy">
+        Log your weight and compare your real trend with the ideal line to your target.
+      </p>
+
+      <form id="weightPlanForm" class="inline-form plan-form">
+        <label>
+          Target weight (kg)
+          <input id="targetWeightKg" name="targetWeightKg" type="number" min="30" max="300" step="0.1" required />
+        </label>
+        <label>
+          Target date
+          <input id="targetDate" name="targetDate" type="date" required />
+        </label>
+        <button type="submit" class="btn-secondary">Save Ideal Line</button>
+      </form>
+
+      <form id="weightEntryForm" class="inline-form">
+        <label>
+          Entry date
+          <input id="weightDate" name="weightDate" type="date" required />
+        </label>
+        <label>
+          Weight (kg)
+          <input id="weightValueKg" name="weightValueKg" type="number" min="30" max="300" step="0.1" required />
+        </label>
+        <button type="submit" class="btn-secondary">Log Weight</button>
+      </form>
 
       <div class="chart-wrap">
-        <canvas id="weightChart" aria-label="Weight trend line"></canvas>
+        <canvas id="weightChart" aria-label="Weight trend versus ideal line"></canvas>
       </div>
+
+      <div class="legend">
+        <span><i class="legend-line legend-real"></i>Real Weight</span>
+        <span><i class="legend-line legend-ideal"></i>Ideal Weight</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Weight (kg)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="weightTableBody"></tbody>
+        </table>
+      </div>
+      </section>
     </div>
-  </section>
+
+    <footer class="footer-note">
+      For planning and education only. Speak with a healthcare professional for medical advice.
+    </footer>
+  </main>
 
   <script src="script.js"></script>
 </body>

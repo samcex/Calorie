@@ -1,15 +1,6 @@
-const STORAGE_KEY = "calorie-tracker-phone-v2";
-const LEGACY_KEY = "calorie-tracker-state-v1";
+const STORAGE_KEY = "calorie-tracker-state-v1";
+const UI_STORAGE_KEY = "calorie-tracker-ui-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
-const WATER_GOAL_LITERS = 3;
-const STEPS_GOAL = 8000;
-
-const MEAL_TYPES = [
-  { key: "breakfast", label: "Breakfast" },
-  { key: "lunch", label: "Lunch" },
-  { key: "dinner", label: "Dinner" },
-  { key: "snacks", label: "Snacks" },
-];
 
 const ACTIVITY_FACTORS = {
   sedentary: 1.2,
@@ -19,70 +10,38 @@ const ACTIVITY_FACTORS = {
   athlete: 1.9,
 };
 
+const GOAL_LABELS = {
+  lose: "Fat-loss target",
+  maintain: "Maintenance target",
+  gain: "Muscle-gain target",
+};
+
 const defaultState = {
   profile: {
     age: 30,
     sex: "female",
     heightCm: 165,
-    weightKg: 115,
+    weightKg: 70,
     activityLevel: "moderate",
     goal: "lose",
     paceKgPerWeek: 0.5,
   },
   calorieSummary: null,
   calorieEntries: [],
-  waterLogs: {},
-  activityLogs: {},
   weightPlan: {
-    targetWeightKg: 68,
-    targetDate: dateAfterDays(120),
+    targetWeightKg: 65,
+    targetDate: dateAfterDays(90),
   },
   weightEntries: [],
-  notes: [],
 };
 
 const state = loadState();
-if (!state.calorieSummary) {
-  state.calorieSummary = calculateCalorieSummary(state.profile);
-}
-let detailMessageTimeout = null;
+const uiState = loadUiState();
 
 const refs = {
-  statusTime: document.getElementById("statusTime"),
-  weekLabel: document.getElementById("weekLabel"),
-  calorieRing: document.getElementById("calorieRing"),
-  remainingCalories: document.getElementById("remainingCalories"),
-  todayEaten: document.getElementById("todayEaten"),
-  todayBurned: document.getElementById("todayBurned"),
-  carbsBar: document.getElementById("carbsBar"),
-  proteinBar: document.getElementById("proteinBar"),
-  fatBar: document.getElementById("fatBar"),
-  carbsText: document.getElementById("carbsText"),
-  proteinText: document.getElementById("proteinText"),
-  fatText: document.getElementById("fatText"),
-  nutritionList: document.getElementById("nutritionList"),
-  waterGoalText: document.getElementById("waterGoalText"),
-  waterAmount: document.getElementById("waterAmount"),
-  cupsRow: document.getElementById("cupsRow"),
-  waterMinus: document.getElementById("waterMinus"),
-  waterPlus: document.getElementById("waterPlus"),
-  weightGoalLabel: document.getElementById("weightGoalLabel"),
-  currentWeightLabel: document.getElementById("currentWeightLabel"),
-  weightDown: document.getElementById("weightDown"),
-  weightUp: document.getElementById("weightUp"),
-  stepCountLabel: document.getElementById("stepCountLabel"),
-  burnedKcalLabel: document.getElementById("burnedKcalLabel"),
-  stepsProgress: document.getElementById("stepsProgress"),
-  stepsMinus: document.getElementById("stepsMinus"),
-  stepsPlus: document.getElementById("stepsPlus"),
-  latestNoteText: document.getElementById("latestNoteText"),
-  addNoteButton: document.getElementById("addNoteButton"),
-  openDetailsButton: document.getElementById("openDetailsButton"),
-  openNutritionButton: document.getElementById("openNutritionButton"),
-  openWeightButton: document.getElementById("openWeightButton"),
-  openActivityButton: document.getElementById("openActivityButton"),
-  detailsOverlay: document.getElementById("detailsOverlay"),
-  closeDetailsButton: document.getElementById("closeDetailsButton"),
+  sectionTabs: document.getElementById("sectionTabs"),
+  tabButtons: Array.from(document.querySelectorAll(".tab-button[data-panel-target]")),
+  panels: Array.from(document.querySelectorAll(".panel[data-panel]")),
   calculatorForm: document.getElementById("calculatorForm"),
   age: document.getElementById("age"),
   sex: document.getElementById("sex"),
@@ -91,193 +50,39 @@ const refs = {
   activityLevel: document.getElementById("activityLevel"),
   goal: document.getElementById("goal"),
   paceKgPerWeek: document.getElementById("paceKgPerWeek"),
-  detailTargetCalories: document.getElementById("detailTargetCalories"),
-  detailFormMessage: document.getElementById("detailFormMessage"),
+  calorieResults: document.getElementById("calorieResults"),
+  calculatorNote: document.getElementById("calculatorNote"),
+  foodEntryForm: document.getElementById("foodEntryForm"),
+  foodDate: document.getElementById("foodDate"),
+  foodName: document.getElementById("foodName"),
+  foodCalories: document.getElementById("foodCalories"),
+  foodTableBody: document.getElementById("foodTableBody"),
+  dayTotal: document.getElementById("dayTotal"),
+  dayTarget: document.getElementById("dayTarget"),
+  dayRemaining: document.getElementById("dayRemaining"),
+  weightPlanForm: document.getElementById("weightPlanForm"),
+  targetWeightKg: document.getElementById("targetWeightKg"),
+  targetDate: document.getElementById("targetDate"),
+  weightEntryForm: document.getElementById("weightEntryForm"),
+  weightDate: document.getElementById("weightDate"),
+  weightValueKg: document.getElementById("weightValueKg"),
+  weightTableBody: document.getElementById("weightTableBody"),
   weightChart: document.getElementById("weightChart"),
+  stripTargetKcal: document.getElementById("stripTargetKcal"),
+  stripTodayKcal: document.getElementById("stripTodayKcal"),
+  stripLatestWeight: document.getElementById("stripLatestWeight"),
 };
 
-const today = localDateString(new Date());
+if (!state.calorieSummary) {
+  state.calorieSummary = calculateCalorieSummary(state.profile);
+}
 
 initializeView();
 attachEvents();
+setActivePanel(uiState.activePanel, false);
 renderAll();
 
 function initializeView() {
-  refs.statusTime.textContent = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  refs.weekLabel.textContent = `Week ${weekNumber(new Date())}`;
-  refs.waterGoalText.textContent = WATER_GOAL_LITERS.toFixed(2);
-
-  syncCalculatorFormFromState();
-}
-
-function attachEvents() {
-  refs.nutritionList.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-add-meal]");
-    if (!button) return;
-    const mealType = button.getAttribute("data-add-meal");
-    addMealEntry(mealType);
-  });
-
-  refs.waterMinus.addEventListener("click", () => adjustWater(-0.25));
-  refs.waterPlus.addEventListener("click", () => adjustWater(0.25));
-
-  refs.weightDown.addEventListener("click", () => adjustWeight(-0.1));
-  refs.weightUp.addEventListener("click", () => adjustWeight(0.1));
-
-  refs.stepsMinus.addEventListener("click", () => adjustSteps(-500));
-  refs.stepsPlus.addEventListener("click", () => adjustSteps(500));
-
-  refs.addNoteButton.addEventListener("click", addNote);
-
-  refs.openDetailsButton.addEventListener("click", openDetails);
-  refs.openNutritionButton.addEventListener("click", openDetails);
-  refs.openWeightButton.addEventListener("click", openDetails);
-  refs.openActivityButton.addEventListener("click", openDetails);
-  refs.closeDetailsButton.addEventListener("click", closeDetails);
-  refs.detailsOverlay.addEventListener("click", (event) => {
-    if (event.target === refs.detailsOverlay) closeDetails();
-  });
-
-  refs.calculatorForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const nextProfile = {
-      age: toNumber(refs.age.value, 10, 100),
-      sex: refs.sex.value === "male" ? "male" : "female",
-      heightCm: toNumber(refs.heightCm.value, 100, 250),
-      weightKg: toNumber(refs.weightKg.value, 30, 300),
-      activityLevel: ACTIVITY_FACTORS[refs.activityLevel.value] ? refs.activityLevel.value : "moderate",
-      goal: ["lose", "maintain", "gain"].includes(refs.goal.value) ? refs.goal.value : "maintain",
-      paceKgPerWeek: toNumber(refs.paceKgPerWeek.value, 0.25, 1),
-    };
-    if (Object.values(nextProfile).some((v) => v === null)) {
-      setDetailMessage("Please fill all fields with valid values.", "error");
-      return;
-    }
-
-    state.profile = nextProfile;
-    state.calorieSummary = calculateCalorieSummary(nextProfile);
-    refs.detailTargetCalories.textContent = `${state.calorieSummary.targetCalories} kcal`;
-    saveState();
-    renderAll();
-    setDetailMessage(`Updated target to ${state.calorieSummary.targetCalories} kcal/day.`, "success");
-  });
-
-  window.addEventListener("resize", debounce(renderWeightChart, 80));
-}
-
-function renderAll() {
-  renderSummary();
-  renderNutrition();
-  renderWater();
-  renderWeight();
-  renderActivities();
-  renderNotes();
-  renderDetails();
-}
-
-function renderSummary() {
-  const eaten = totalCaloriesForDate(today);
-  const target = state.calorieSummary.targetCalories;
-  const burned = burnedCaloriesForDate(today);
-  const remaining = target - eaten;
-
-  refs.todayEaten.textContent = `${Math.round(eaten)}`;
-  refs.todayBurned.textContent = `${Math.round(burned)}`;
-  refs.remainingCalories.textContent = `${Math.round(remaining)}`;
-
-  const ringPercent = clamp(target > 0 ? eaten / target : 0, 0, 1);
-  const ringDeg = Math.round(ringPercent * 360);
-  refs.calorieRing.style.background = `conic-gradient(#ffffff ${ringDeg}deg, rgba(255, 255, 255, 0.18) ${ringDeg}deg 360deg)`;
-
-  const carbs = Math.round((eaten * 0.45) / 4);
-  const protein = Math.round((eaten * 0.3) / 4);
-  const fat = Math.round((eaten * 0.25) / 9);
-  const goalCarbs = Math.round((target * 0.45) / 4);
-  const goalProtein = Math.round((target * 0.3) / 4);
-  const goalFat = Math.round((target * 0.25) / 9);
-
-  refs.carbsText.textContent = `${carbs} / ${goalCarbs} g`;
-  refs.proteinText.textContent = `${protein} / ${goalProtein} g`;
-  refs.fatText.textContent = `${fat} / ${goalFat} g`;
-
-  refs.carbsBar.style.width = `${Math.round(clamp(goalCarbs > 0 ? carbs / goalCarbs : 0, 0, 1) * 100)}%`;
-  refs.proteinBar.style.width = `${Math.round(clamp(goalProtein > 0 ? protein / goalProtein : 0, 0, 1) * 100)}%`;
-  refs.fatBar.style.width = `${Math.round(clamp(goalFat > 0 ? fat / goalFat : 0, 0, 1) * 100)}%`;
-}
-
-function renderNutrition() {
-  refs.nutritionList.innerHTML = "";
-  MEAL_TYPES.forEach((meal) => {
-    const mealEntries = state.calorieEntries.filter((entry) => entry.date === today && entry.mealType === meal.key);
-    const kcal = mealEntries.reduce((sum, entry) => sum + entry.calories, 0);
-
-    const row = document.createElement("article");
-    row.className = "meal-row";
-    row.innerHTML = `
-      <div class="meal-label">
-        <strong>${meal.label}</strong>
-        <small>${mealEntries.length} item${mealEntries.length === 1 ? "" : "s"}</small>
-      </div>
-      <span class="meal-kcal">${Math.round(kcal)} kcal</span>
-      <button class="plus-btn" type="button" data-add-meal="${meal.key}">+</button>
-    `;
-    refs.nutritionList.appendChild(row);
-  });
-}
-
-function renderWater() {
-  const liters = Number(state.waterLogs[today] || 0);
-  refs.waterAmount.textContent = `${liters.toFixed(2)} L`;
-  refs.cupsRow.innerHTML = "";
-
-  for (let i = 1; i <= 6; i += 1) {
-    const cup = document.createElement("i");
-    cup.className = "cup";
-    if (liters >= i * 0.5) cup.classList.add("is-full");
-    refs.cupsRow.appendChild(cup);
-  }
-}
-
-function renderWeight() {
-  const latest = latestWeightEntry();
-  refs.currentWeightLabel.textContent = `${latest.weightKg.toFixed(1)} kg`;
-  refs.weightGoalLabel.textContent = `${state.weightPlan.targetWeightKg.toFixed(1)} kg`;
-}
-
-function renderActivities() {
-  const steps = Number(state.activityLogs[today] || 0);
-  const burned = burnedCaloriesForDate(today);
-
-  refs.stepCountLabel.textContent = `${Math.round(steps)} steps`;
-  refs.burnedKcalLabel.textContent = `${burned.toFixed(1)} kcal`;
-  refs.stepsProgress.style.width = `${Math.round(clamp(steps / STEPS_GOAL, 0, 1) * 100)}%`;
-}
-
-function renderNotes() {
-  const latest = [...state.notes].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-  refs.latestNoteText.textContent = latest ? latest.text : "How was your day?";
-}
-
-function renderDetails() {
-  refs.detailTargetCalories.textContent = `${state.calorieSummary.targetCalories} kcal`;
-  renderWeightChart();
-}
-
-function openDetails() {
-  syncCalculatorFormFromState();
-  setDetailMessage("", "success", true);
-  refs.detailsOverlay.hidden = false;
-  renderDetails();
-}
-
-function closeDetails() {
-  refs.detailsOverlay.hidden = true;
-}
-
-function syncCalculatorFormFromState() {
   refs.age.value = state.profile.age;
   refs.sex.value = state.profile.sex;
   refs.heightCm.value = state.profile.heightCm;
@@ -285,134 +90,391 @@ function syncCalculatorFormFromState() {
   refs.activityLevel.value = state.profile.activityLevel;
   refs.goal.value = state.profile.goal;
   refs.paceKgPerWeek.value = String(state.profile.paceKgPerWeek);
+
+  refs.targetWeightKg.value = state.weightPlan.targetWeightKg;
+  refs.targetDate.value = state.weightPlan.targetDate || dateAfterDays(90);
+
+  const today = localDateString(new Date());
+  refs.foodDate.value = today;
+  refs.weightDate.value = today;
+  refs.weightValueKg.value = state.profile.weightKg.toFixed(1);
 }
 
-function setDetailMessage(message, type, clearOnly = false) {
-  if (!refs.detailFormMessage) return;
-
-  refs.detailFormMessage.textContent = message;
-  refs.detailFormMessage.classList.remove("is-error", "is-success");
-  if (!clearOnly && message) {
-    refs.detailFormMessage.classList.add(type === "error" ? "is-error" : "is-success");
-  }
-
-  if (detailMessageTimeout) {
-    clearTimeout(detailMessageTimeout);
-    detailMessageTimeout = null;
-  }
-
-  if (!clearOnly && message) {
-    detailMessageTimeout = setTimeout(() => {
-      refs.detailFormMessage.textContent = "";
-      refs.detailFormMessage.classList.remove("is-error", "is-success");
-      detailMessageTimeout = null;
-    }, 2200);
-  }
-}
-
-function addMealEntry(mealType) {
-  const caloriesInput = window.prompt(`Add calories for ${capitalize(mealType)}:`, "300");
-  if (caloriesInput === null) return;
-  const calories = toNumber(caloriesInput, 1, 6000);
-  if (calories === null) return;
-
-  const itemInput = window.prompt("Optional meal note:", "");
-  const name = (itemInput || capitalize(mealType)).trim() || capitalize(mealType);
-
-  state.calorieEntries.push({
-    id: generateId(),
-    date: today,
-    mealType,
-    name,
-    calories,
+function attachEvents() {
+  refs.sectionTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-panel-target]");
+    if (!button) return;
+    const panelName = button.getAttribute("data-panel-target");
+    setActivePanel(panelName, true);
   });
-  saveState();
-  renderSummary();
-  renderNutrition();
+
+  refs.calculatorForm.addEventListener("submit", handleCalculatorSubmit);
+  refs.foodEntryForm.addEventListener("submit", handleAddFoodEntry);
+  refs.foodDate.addEventListener("change", renderDailyTotals);
+
+  refs.foodTableBody.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-delete-food]");
+    if (!button) return;
+    const entryId = button.getAttribute("data-delete-food");
+    state.calorieEntries = state.calorieEntries.filter((entry) => entry.id !== entryId);
+    saveState();
+    renderFoodTable();
+    renderDailyTotals();
+  });
+
+  refs.weightPlanForm.addEventListener("submit", handleSaveWeightPlan);
+  refs.weightEntryForm.addEventListener("submit", handleAddWeightEntry);
+  refs.weightTableBody.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-delete-weight]");
+    if (!button) return;
+    const entryId = button.getAttribute("data-delete-weight");
+    state.weightEntries = state.weightEntries.filter((entry) => entry.id !== entryId);
+    saveState();
+    renderWeightTable();
+    renderWeightChart();
+  });
+
+  window.addEventListener("resize", debounce(renderWeightChart, 90));
 }
 
-function adjustWater(delta) {
-  const current = Number(state.waterLogs[today] || 0);
-  const next = clamp(roundTo2(current + delta), 0, 8);
-  state.waterLogs[today] = next;
-  saveState();
-  renderWater();
+function setActivePanel(panelName, shouldPersist) {
+  const allowedPanels = ["calculator", "food", "weight"];
+  const nextPanel = allowedPanels.includes(panelName) ? panelName : "calculator";
+  uiState.activePanel = nextPanel;
+
+  refs.tabButtons.forEach((button) => {
+    const isActive = button.getAttribute("data-panel-target") === nextPanel;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  refs.panels.forEach((panel) => {
+    const isActive = panel.getAttribute("data-panel") === nextPanel;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+
+  if (shouldPersist) {
+    saveUiState();
+  }
+
+  if (nextPanel === "weight") {
+    // Ensure the canvas has a final rendered width after tab activation.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(renderWeightChart);
+    });
+  }
 }
 
-function adjustWeight(delta) {
-  const latest = latestWeightEntry();
-  const next = roundTo1(clamp(latest.weightKg + delta, 30, 300));
-  upsertWeightEntry(today, next);
-  refs.weightKg.value = next.toFixed(1);
+function renderSummaryStrip() {
+  if (!refs.stripTargetKcal || !refs.stripTodayKcal || !refs.stripLatestWeight) {
+    return;
+  }
+
+  const today = localDateString(new Date());
+  const todayCalories = state.calorieEntries
+    .filter((entry) => entry.date === today)
+    .reduce((sum, entry) => sum + entry.calories, 0);
+  const target = state.calorieSummary ? state.calorieSummary.targetCalories : null;
+
+  const latestWeightEntry = state.weightEntries.reduce((latest, entry) => {
+    if (!latest || entry.date > latest.date) {
+      return entry;
+    }
+    return latest;
+  }, null);
+
+  refs.stripTargetKcal.textContent = target === null ? "-" : `${target}`;
+  refs.stripTodayKcal.textContent = `${todayCalories}`;
+  refs.stripLatestWeight.textContent = latestWeightEntry ? `${latestWeightEntry.weightKg.toFixed(1)} kg` : "-";
+}
+
+function handleCalculatorSubmit(event) {
+  event.preventDefault();
+
+  const profile = {
+    age: numericValue(refs.age.value, 10, 100),
+    sex: refs.sex.value === "male" ? "male" : "female",
+    heightCm: numericValue(refs.heightCm.value, 100, 250),
+    weightKg: numericValue(refs.weightKg.value, 30, 300),
+    activityLevel: ACTIVITY_FACTORS[refs.activityLevel.value] ? refs.activityLevel.value : "moderate",
+    goal: GOAL_LABELS[refs.goal.value] ? refs.goal.value : "maintain",
+    paceKgPerWeek: numericValue(refs.paceKgPerWeek.value, 0.25, 1),
+  };
+
+  if (Object.values(profile).some((value) => value === null)) {
+    refs.calculatorNote.textContent = "Please fill out all calculator fields with valid values.";
+    return;
+  }
+
+  state.profile = profile;
+  state.calorieSummary = calculateCalorieSummary(profile);
+
+  refs.weightValueKg.value = profile.weightKg.toFixed(1);
+  if (!state.weightPlan.targetWeightKg) {
+    state.weightPlan.targetWeightKg = profile.weightKg;
+    refs.targetWeightKg.value = profile.weightKg.toFixed(1);
+  }
+
   saveState();
-  renderWeight();
+  renderCalorieSummary();
+  renderDailyTotals();
   renderWeightChart();
 }
 
-function adjustSteps(delta) {
-  const current = Number(state.activityLogs[today] || 0);
-  state.activityLogs[today] = Math.max(0, current + delta);
+function handleAddFoodEntry(event) {
+  event.preventDefault();
+
+  const date = refs.foodDate.value;
+  const name = refs.foodName.value.trim();
+  const calories = numericValue(refs.foodCalories.value, 1, 5000);
+
+  if (!date || !name || calories === null) {
+    return;
+  }
+
+  state.calorieEntries.push({
+    id: generateId(),
+    date,
+    name,
+    calories,
+  });
+
+  refs.foodName.value = "";
+  refs.foodCalories.value = "";
+
   saveState();
-  renderActivities();
-  renderSummary();
+  renderFoodTable();
+  renderDailyTotals();
 }
 
-function addNote() {
-  const text = window.prompt("Add note:", "");
-  if (!text) return;
-  state.notes.push({
-    id: generateId(),
-    date: today,
-    text: text.trim().slice(0, 180),
-  });
+function handleSaveWeightPlan(event) {
+  event.preventDefault();
+
+  const targetWeightKg = numericValue(refs.targetWeightKg.value, 30, 300);
+  const targetDate = refs.targetDate.value;
+
+  if (targetWeightKg === null || !targetDate) {
+    return;
+  }
+
+  state.weightPlan.targetWeightKg = targetWeightKg;
+  state.weightPlan.targetDate = targetDate;
+
   saveState();
-  renderNotes();
+  renderWeightChart();
+}
+
+function handleAddWeightEntry(event) {
+  event.preventDefault();
+
+  const date = refs.weightDate.value;
+  const weightKg = numericValue(refs.weightValueKg.value, 30, 300);
+  if (!date || weightKg === null) {
+    return;
+  }
+
+  const existing = state.weightEntries.find((entry) => entry.date === date);
+  if (existing) {
+    existing.weightKg = weightKg;
+  } else {
+    state.weightEntries.push({
+      id: generateId(),
+      date,
+      weightKg,
+    });
+  }
+
+  saveState();
+  renderWeightTable();
+  renderWeightChart();
+}
+
+function renderAll() {
+  renderCalorieSummary();
+  renderFoodTable();
+  renderDailyTotals();
+  renderWeightTable();
+  renderWeightChart();
+  renderSummaryStrip();
+}
+
+function renderCalorieSummary() {
+  const summary = state.calorieSummary;
+  if (!summary) {
+    refs.calorieResults.innerHTML = "";
+    refs.calculatorNote.textContent = "";
+    return;
+  }
+
+  const cards = [
+    { label: "BMR", value: `${summary.bmr} kcal` },
+    { label: "Maintenance", value: `${summary.maintenance} kcal` },
+    { label: GOAL_LABELS[state.profile.goal], value: `${summary.targetCalories} kcal` },
+    { label: "Daily adjustment", value: `${summary.adjustment >= 0 ? "+" : ""}${summary.adjustment} kcal` },
+  ];
+
+  refs.calorieResults.innerHTML = cards
+    .map((card) => `<article class="result-card"><span>${card.label}</span><strong>${card.value}</strong></article>`)
+    .join("");
+
+  refs.calculatorNote.textContent = summary.note;
+}
+
+function renderFoodTable() {
+  refs.foodTableBody.innerHTML = "";
+  const entries = [...state.calorieEntries].sort((a, b) => {
+    if (a.date === b.date) return b.id.localeCompare(a.id);
+    return a.date < b.date ? 1 : -1;
+  });
+
+  if (entries.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 4;
+    cell.className = "empty-row";
+    cell.textContent = "No food entries yet.";
+    row.appendChild(cell);
+    refs.foodTableBody.appendChild(row);
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const row = document.createElement("tr");
+
+    const dateCell = document.createElement("td");
+    dateCell.textContent = displayDate(entry.date);
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = entry.name;
+
+    const calorieCell = document.createElement("td");
+    calorieCell.textContent = `${entry.calories}`;
+
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+    button.className = "row-action";
+    button.type = "button";
+    button.setAttribute("data-delete-food", entry.id);
+    button.textContent = "Delete";
+    actionCell.appendChild(button);
+
+    row.appendChild(dateCell);
+    row.appendChild(nameCell);
+    row.appendChild(calorieCell);
+    row.appendChild(actionCell);
+    refs.foodTableBody.appendChild(row);
+  });
+}
+
+function renderDailyTotals() {
+  const selectedDate = refs.foodDate.value || localDateString(new Date());
+  const total = state.calorieEntries
+    .filter((entry) => entry.date === selectedDate)
+    .reduce((sum, entry) => sum + entry.calories, 0);
+
+  const target = state.calorieSummary ? state.calorieSummary.targetCalories : null;
+  const remaining = typeof target === "number" ? target - total : null;
+
+  refs.dayTotal.textContent = `${total}`;
+  refs.dayTarget.textContent = target === null ? "-" : `${target}`;
+  refs.dayRemaining.textContent = remaining === null ? "-" : `${remaining}`;
+  refs.dayRemaining.classList.remove("is-positive", "is-negative", "is-neutral");
+
+  if (remaining === null) {
+    refs.dayRemaining.classList.add("is-neutral");
+  } else if (remaining < 0) {
+    refs.dayRemaining.classList.add("is-negative");
+  } else {
+    refs.dayRemaining.classList.add("is-positive");
+  }
+
+  renderSummaryStrip();
+}
+
+function renderWeightTable() {
+  refs.weightTableBody.innerHTML = "";
+  const entries = [...state.weightEntries].sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  if (entries.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.className = "empty-row";
+    cell.textContent = "No weight entries yet.";
+    row.appendChild(cell);
+    refs.weightTableBody.appendChild(row);
+    renderSummaryStrip();
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const row = document.createElement("tr");
+
+    const dateCell = document.createElement("td");
+    dateCell.textContent = displayDate(entry.date);
+
+    const weightCell = document.createElement("td");
+    weightCell.textContent = entry.weightKg.toFixed(1);
+
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+    button.className = "row-action";
+    button.type = "button";
+    button.setAttribute("data-delete-weight", entry.id);
+    button.textContent = "Delete";
+    actionCell.appendChild(button);
+
+    row.appendChild(dateCell);
+    row.appendChild(weightCell);
+    row.appendChild(actionCell);
+    refs.weightTableBody.appendChild(row);
+  });
+
+  renderSummaryStrip();
 }
 
 function renderWeightChart() {
   const canvas = refs.weightChart;
-  const rect = canvas.getBoundingClientRect();
-  const width = rect.width || 320;
-  const height = rect.height || 220;
-  const dpr = window.devicePixelRatio || 1;
-
-  if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-  }
-
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const { ctx, width, height } = setupCanvas(canvas);
   ctx.clearRect(0, 0, width, height);
 
   const actual = [...state.weightEntries]
-    .map((entry) => ({ t: dateToTimestamp(entry.date), w: entry.weightKg }))
+    .map((entry) => ({
+      t: dateToTimestamp(entry.date),
+      weight: entry.weightKg,
+    }))
     .sort((a, b) => a.t - b.t);
 
   if (actual.length === 0) {
-    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.font = "12px Manrope";
-    ctx.textAlign = "center";
-    ctx.fillText("No weight entries yet", width / 2, height / 2);
+    drawEmptyChartMessage(ctx, width, height, "Add weight entries to view your trend line.");
     return;
   }
 
-  const start = actual[0];
-  const targetDate = dateToTimestamp(state.weightPlan.targetDate || dateAfterDays(120));
-  const safeTarget = Math.max(targetDate, start.t + DAY_MS);
-  const targetWeight = state.weightPlan.targetWeightKg;
+  const startPoint = actual[0];
+  const planTargetDate = state.weightPlan.targetDate ? dateToTimestamp(state.weightPlan.targetDate) : startPoint.t + DAY_MS * 90;
+  const safeTargetDate = Math.max(planTargetDate, startPoint.t + DAY_MS);
+  const targetWeight = Number.isFinite(state.weightPlan.targetWeightKg) ? state.weightPlan.targetWeightKg : startPoint.weight;
 
-  const ticks = uniqueSorted([start.t, safeTarget, ...actual.map((p) => p.t)]);
-  const ideal = ticks.map((t) => {
-    const progress = clamp((t - start.t) / (safeTarget - start.t), 0, 1);
-    return { t, w: start.w + (targetWeight - start.w) * progress };
+  const dateTicks = uniqueSortedNumbers([
+    ...actual.map((point) => point.t),
+    startPoint.t,
+    safeTargetDate,
+  ]);
+
+  const ideal = dateTicks.map((timestamp) => {
+    const progress = clamp((timestamp - startPoint.t) / (safeTargetDate - startPoint.t), 0, 1);
+    return {
+      t: timestamp,
+      weight: startPoint.weight + (targetWeight - startPoint.weight) * progress,
+    };
   });
 
-  const all = [...actual, ...ideal];
-  let xMin = Math.min(...all.map((p) => p.t));
-  let xMax = Math.max(...all.map((p) => p.t));
-  let yMin = Math.min(...all.map((p) => p.w));
-  let yMax = Math.max(...all.map((p) => p.w));
+  const allPoints = [...actual, ...ideal];
+  let xMin = Math.min(...allPoints.map((point) => point.t));
+  let xMax = Math.max(...allPoints.map((point) => point.t));
+  let yMin = Math.min(...allPoints.map((point) => point.weight));
+  let yMax = Math.max(...allPoints.map((point) => point.weight));
 
   if (xMin === xMax) {
     xMin -= DAY_MS;
@@ -422,30 +484,64 @@ function renderWeightChart() {
     yMin -= 1;
     yMax += 1;
   }
-  const pad = Math.max(1, (yMax - yMin) * 0.14);
-  yMin -= pad;
-  yMax += pad;
 
-  const chart = { left: 34, right: width - 12, top: 12, bottom: height - 24 };
-  const plotW = chart.right - chart.left;
-  const plotH = chart.bottom - chart.top;
+  const yPadding = Math.max(1, (yMax - yMin) * 0.16);
+  yMin -= yPadding;
+  yMax += yPadding;
 
-  const xToPx = (x) => chart.left + ((x - xMin) / (xMax - xMin)) * plotW;
-  const yToPx = (y) => chart.bottom - ((y - yMin) / (yMax - yMin)) * plotH;
+  const chart = {
+    left: 52,
+    right: width - 16,
+    top: 18,
+    bottom: height - 34,
+  };
 
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  const plotWidth = chart.right - chart.left;
+  const plotHeight = chart.bottom - chart.top;
+
+  const xToPx = (value) => chart.left + ((value - xMin) / (xMax - xMin)) * plotWidth;
+  const yToPx = (value) => chart.bottom - ((value - yMin) / (yMax - yMin)) * plotHeight;
+
+  drawGrid(ctx, chart, xMin, xMax, yMin, yMax, xToPx, yToPx);
+  drawLine(ctx, ideal, xToPx, yToPx, "#7b97df", [6, 4], 2);
+  drawLine(ctx, actual, xToPx, yToPx, "#2e68ff", [], 2.6);
+  drawPoints(ctx, actual, xToPx, yToPx, "#214ed4");
+}
+
+function drawGrid(ctx, chart, xMin, xMax, yMin, yMax, xToPx, yToPx) {
+  ctx.save();
+  ctx.strokeStyle = "#d7e3ff";
+  ctx.fillStyle = "#607299";
   ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i += 1) {
-    const y = chart.top + (plotH * i) / 4;
+  ctx.font = "12px 'Manrope', sans-serif";
+
+  const horizontalTicks = 5;
+  for (let i = 0; i <= horizontalTicks; i += 1) {
+    const value = yMin + ((yMax - yMin) * i) / horizontalTicks;
+    const y = yToPx(value);
     ctx.beginPath();
     ctx.moveTo(chart.left, y);
     ctx.lineTo(chart.right, y);
     ctx.stroke();
+    ctx.fillText(value.toFixed(1), 8, y + 4);
   }
 
-  drawLine(ctx, ideal, xToPx, yToPx, "rgba(255, 255, 255, 0.45)", [5, 4], 1.7);
-  drawLine(ctx, actual, xToPx, yToPx, "#ffffff", [], 2.3);
-  drawPoints(ctx, actual, xToPx, yToPx, "#ffffff");
+  const verticalTicks = 4;
+  for (let i = 0; i <= verticalTicks; i += 1) {
+    const value = xMin + ((xMax - xMin) * i) / verticalTicks;
+    const x = xToPx(value);
+    ctx.beginPath();
+    ctx.moveTo(x, chart.top);
+    ctx.lineTo(x, chart.bottom);
+    ctx.stroke();
+    const label = new Date(value).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+    ctx.fillText(label, x - 24, chart.bottom + 18);
+  }
+
+  ctx.restore();
 }
 
 function drawLine(ctx, points, xToPx, yToPx, color, dash, width) {
@@ -455,9 +551,9 @@ function drawLine(ctx, points, xToPx, yToPx, color, dash, width) {
   ctx.lineWidth = width;
   ctx.setLineDash(dash);
   ctx.beginPath();
-  points.forEach((p, index) => {
-    const x = xToPx(p.t);
-    const y = yToPx(p.w);
+  points.forEach((point, index) => {
+    const x = xToPx(point.t);
+    const y = yToPx(point.weight);
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -468,45 +564,38 @@ function drawLine(ctx, points, xToPx, yToPx, color, dash, width) {
 function drawPoints(ctx, points, xToPx, yToPx, color) {
   ctx.save();
   ctx.fillStyle = color;
-  points.forEach((p) => {
+  points.forEach((point) => {
     ctx.beginPath();
-    ctx.arc(xToPx(p.t), yToPx(p.w), 2.8, 0, Math.PI * 2);
+    ctx.arc(xToPx(point.t), yToPx(point.weight), 3, 0, Math.PI * 2);
     ctx.fill();
   });
   ctx.restore();
 }
 
-function totalCaloriesForDate(date) {
-  return state.calorieEntries
-    .filter((entry) => entry.date === date)
-    .reduce((sum, entry) => sum + entry.calories, 0);
+function drawEmptyChartMessage(ctx, width, height, message) {
+  ctx.save();
+  ctx.fillStyle = "#607299";
+  ctx.font = "14px 'Manrope', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(message, width / 2, height / 2);
+  ctx.restore();
 }
 
-function burnedCaloriesForDate(date) {
-  const steps = Number(state.activityLogs[date] || 0);
-  return steps * 0.04;
-}
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const width = rect.width || 600;
+  const height = rect.height || 320;
+  const dpr = window.devicePixelRatio || 1;
 
-function latestWeightEntry() {
-  if (state.weightEntries.length === 0) {
-    const fallback = roundTo1(state.profile.weightKg);
-    upsertWeightEntry(today, fallback);
-    return { date: today, weightKg: fallback };
+  if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
   }
-  return [...state.weightEntries].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-}
 
-function upsertWeightEntry(date, weightKg) {
-  const existing = state.weightEntries.find((entry) => entry.date === date);
-  if (existing) {
-    existing.weightKg = weightKg;
-    return;
-  }
-  state.weightEntries.push({
-    id: generateId(),
-    date,
-    weightKg,
-  });
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, width, height };
 }
 
 function calculateCalorieSummary(profile) {
@@ -516,156 +605,166 @@ function calculateCalorieSummary(profile) {
   const maintenance = Math.round(bmr * ACTIVITY_FACTORS[activityLevel]);
 
   let adjustment = 0;
-  if (goal === "lose") adjustment = -Math.round(clamp((paceKgPerWeek * 7700) / 7, 150, 1100));
-  if (goal === "gain") adjustment = Math.round(clamp((paceKgPerWeek * 7700) / 7, 150, 700));
+  if (goal === "lose") {
+    adjustment = -Math.round(clamp((paceKgPerWeek * 7700) / 7, 150, 1100));
+  } else if (goal === "gain") {
+    adjustment = Math.round(clamp((paceKgPerWeek * 7700) / 7, 150, 700));
+  }
 
+  const rawTarget = maintenance + adjustment;
   const safetyFloor = sex === "male" ? 1500 : 1200;
-  const targetCalories = Math.max(Math.round(maintenance + adjustment), safetyFloor);
-  return { bmr, maintenance, adjustment, targetCalories };
+  const targetCalories = Math.round(Math.max(rawTarget, safetyFloor));
+
+  const noteParts = [
+    `Estimated BMR and TDEE are formula-based and approximate.`,
+  ];
+  if (targetCalories !== rawTarget) {
+    noteParts.push(`A safety floor of ${safetyFloor} kcal/day was applied.`);
+  }
+
+  return {
+    bmr,
+    maintenance,
+    adjustment,
+    targetCalories,
+    note: noteParts.join(" "),
+  };
 }
 
 function loadState() {
-  const fromNew = safeParse(localStorage.getItem(STORAGE_KEY));
-  if (fromNew) return hydrate(fromNew);
-
-  const fromLegacy = safeParse(localStorage.getItem(LEGACY_KEY));
-  if (fromLegacy) {
-    const migrated = hydrate({
-      ...defaultState,
-      ...fromLegacy,
-      waterLogs: {},
-      activityLogs: {},
-      notes: [],
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-    return migrated;
-  }
-
-  const clean = hydrate(defaultState);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
-  return clean;
-}
-
-function hydrate(source) {
-  const safe = {
-    profile: { ...defaultState.profile, ...(source.profile || {}) },
-    calorieSummary: source.calorieSummary || null,
-    calorieEntries: Array.isArray(source.calorieEntries) ? source.calorieEntries : [],
-    waterLogs: source.waterLogs && typeof source.waterLogs === "object" ? source.waterLogs : {},
-    activityLogs: source.activityLogs && typeof source.activityLogs === "object" ? source.activityLogs : {},
-    weightPlan: { ...defaultState.weightPlan, ...(source.weightPlan || {}) },
-    weightEntries: Array.isArray(source.weightEntries) ? source.weightEntries : [],
-    notes: Array.isArray(source.notes) ? source.notes : [],
+  const clone = {
+    profile: { ...defaultState.profile },
+    calorieSummary: null,
+    calorieEntries: [],
+    weightPlan: { ...defaultState.weightPlan },
+    weightEntries: [],
   };
 
-  safe.calorieEntries = safe.calorieEntries
-    .filter((entry) => entry && typeof entry.date === "string")
-    .map((entry) => ({
-      id: typeof entry.id === "string" ? entry.id : generateId(),
-      date: entry.date,
-      mealType: MEAL_TYPES.some((m) => m.key === entry.mealType) ? entry.mealType : inferMealType(entry.name),
-      name: typeof entry.name === "string" ? entry.name : "Meal",
-      calories: toNumber(entry.calories, 0, 6000) || 0,
-    }));
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return clone;
 
-  safe.weightEntries = safe.weightEntries
-    .filter((entry) => entry && typeof entry.date === "string")
-    .map((entry) => ({
-      id: typeof entry.id === "string" ? entry.id : generateId(),
-      date: entry.date,
-      weightKg: roundTo1(toNumber(entry.weightKg, 30, 300) || defaultState.profile.weightKg),
-    }));
+  try {
+    const parsed = JSON.parse(stored);
 
-  safe.notes = safe.notes
-    .filter((note) => note && typeof note.text === "string")
-    .map((note) => ({
-      id: typeof note.id === "string" ? note.id : generateId(),
-      date: typeof note.date === "string" ? note.date : today,
-      text: note.text.slice(0, 180),
-    }));
+    clone.profile = {
+      ...clone.profile,
+      ...(parsed.profile || {}),
+    };
 
-  return safe;
+    if (parsed.calorieSummary && typeof parsed.calorieSummary === "object") {
+      clone.calorieSummary = parsed.calorieSummary;
+    }
+
+    if (Array.isArray(parsed.calorieEntries)) {
+      clone.calorieEntries = parsed.calorieEntries
+        .filter((entry) => entry && typeof entry.date === "string" && typeof entry.name === "string")
+        .map((entry) => ({
+          id: typeof entry.id === "string" ? entry.id : generateId(),
+          date: entry.date,
+          name: entry.name,
+          calories: Number(entry.calories) || 0,
+        }));
+    }
+
+    clone.weightPlan = {
+      ...clone.weightPlan,
+      ...(parsed.weightPlan || {}),
+    };
+
+    if (Array.isArray(parsed.weightEntries)) {
+      clone.weightEntries = parsed.weightEntries
+        .filter((entry) => entry && typeof entry.date === "string")
+        .map((entry) => ({
+          id: typeof entry.id === "string" ? entry.id : generateId(),
+          date: entry.date,
+          weightKg: Number(entry.weightKg) || 0,
+        }))
+        .filter((entry) => entry.weightKg > 0);
+    }
+  } catch (error) {
+    console.error("Failed to parse saved state:", error);
+  }
+
+  return clone;
 }
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function inferMealType(name) {
-  const lower = String(name || "").toLowerCase();
-  if (lower.includes("break")) return "breakfast";
-  if (lower.includes("lunch")) return "lunch";
-  if (lower.includes("dinner")) return "dinner";
-  return "snacks";
+function loadUiState() {
+  const defaults = { activePanel: "calculator" };
+  const stored = localStorage.getItem(UI_STORAGE_KEY);
+  if (!stored) return defaults;
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (parsed && typeof parsed.activePanel === "string") {
+      return {
+        activePanel: parsed.activePanel,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to parse UI state:", error);
+  }
+
+  return defaults;
 }
 
-function toNumber(value, min, max) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n < min || n > max) return null;
-  return n;
+function saveUiState() {
+  localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(uiState));
 }
 
-function roundTo1(value) {
-  return Math.round(value * 10) / 10;
+function numericValue(value, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < min || number > max) return null;
+  return number;
 }
 
-function roundTo2(value) {
-  return Math.round(value * 100) / 100;
+function uniqueSortedNumbers(list) {
+  return [...new Set(list)].sort((a, b) => a - b);
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function safeParse(raw) {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+function displayDate(dateString) {
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
-function dateAfterDays(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return localDateString(d);
+function dateToTimestamp(dateString) {
+  return new Date(`${dateString}T00:00:00`).getTime();
 }
 
 function localDateString(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function dateToTimestamp(dateStr) {
-  return new Date(`${dateStr}T00:00:00`).getTime();
-}
-
-function weekNumber(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - yearStart) / DAY_MS) + 1) / 7);
-}
-
-function uniqueSorted(arr) {
-  return [...new Set(arr)].sort((a, b) => a - b);
+function dateAfterDays(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return localDateString(date);
 }
 
 function generateId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function debounce(fn, wait) {
-  let t;
+function debounce(callback, waitMs) {
+  let timeoutId = null;
   return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), wait);
+    if (timeoutId) window.clearTimeout(timeoutId);
+    timeoutId = window.setTimeout(() => callback(...args), waitMs);
   };
 }
